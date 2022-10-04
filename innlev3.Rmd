@@ -1,0 +1,254 @@
+---
+title: "Innlevering 3"
+author: "Trygve-Tobias Johansen"
+date: "2022-09-30"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#Loading packages
+library(jsonlite)
+library(janitor)
+library(tidyverse)
+library(lubridate)
+library(httr)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+Sys.setlocale(locale="no_NO") #gjør norsk tegn tilgjengelig
+```
+
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+# Needed jstat to read JSON-stat
+library(rjstat)
+url <- 'https://data.ssb.no/api/v0/no/table/11155/'
+
+```
+
+
+```{r hent fra ssb, message=FALSE, warning=FALSE, include=FALSE}
+# Data from SSB 
+data <-  '{
+  "query": [
+    {
+      "code": "Kjonn",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "0"
+        ]
+      }
+    },
+    {
+      "code": "Alder",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "20-64",
+          "15-24"
+        ]
+      }
+    },
+    {
+      "code": "UtdNivaa",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "TOT"
+        ]
+      }
+    },
+    {
+      "code": "ContentsCode",
+      "selection": {
+        "filter": "item",
+        "values": [
+          "ArbLedigProsent"
+        ]
+      }
+    }
+  ],
+  "response": {
+    "format": "json-stat2"
+  }
+}'
+d.tmp <- POST(url , body = data, encode = "json", verbose())
+
+```
+
+
+```{r include=FALSE}
+sbtabell <- fromJSONstat(content(d.tmp, "text"))
+```
+
+```{r include=FALSE}
+sbtabell <- clean_names(sbtabell)# cleaning names
+```
+
+## 3.1.1
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+# 5.1.2 Lag figur 1 med ggplot2
+fig1<-sbtabell %>% 
+  ggplot(aes(x=ar,y=value, color=alder, group=alder)) +
+  geom_point(size=3)+
+  geom_line()+
+  labs(subtitle="Figur 1",
+       x = "Tid",
+       y = "Arbeidsledighet i %",
+       title = "Arebeidledighet blant ungdommer og voksne",
+       col = "") +
+  theme_bw()+
+  theme(legend.position = "bottom")+
+  theme(axis.text.x = element_text(angle=60, vjust = 0.6))+
+  scale_color_discrete(name="Aldersgruppe:", labels=c("15-24.", "20-64."))+
+  scale_y_continuous(limits=c(1,12))
+fig1
+```
+
+Ut fra figuren ser vi den prosentvise arbeidsledigheten i Norge på den vertikale aksen og årstall på den horisontale. Det er delt inn i to grupper, ungdommer(15-24år) og voksne (20-64år). Vi ser ut fra figuren at arbeidsledigheten for voksne er betydelig lavere enn for ungdommer. For ungdommer ligger arbeidsledigheten på rundt 10-11%, mens for voksne er den på rundt 2.5-4%.
+
+En arbeidsledig person er en som er uten inntektsgivende arbeid, har aktivt søkt jobb de siste ukene og kan påta seg arbeid. Minstelønn er til for å forsøke minske inntektsforskjeller og fattigdom, dette kan settes ved lovregulering av staten, tariffestes eller allmenngjort tariffavtaler. I Norden har tariffavtaler stor betydning og disse er til for å hindre at grupper blir diskriminert eller utnyttet på arbeidsmarkedet.
+
+Økonomisk teori gir entydige spådommer om virkningen av minstelønn arbeidsmarked med konkurranse. Minstelønn gir opphav til ineffektivitet og arbeidsledighet, men øker likevektslønnsnivået. Fordi en høyere minstelønn vil sørge for høyere deltakelse og forskyvning av noen arbeidstakere. 
+
+Figuren over til venstre illustrerer hvordan innføring av minstelønn påvirker et perfekt arbeidsmarked. Før innføringen av minstelønnen er arbeidsmarkedets likevekt ved punkt A, i skjæringspunktet mellom arbeidstilbudskurven og arbeidsetterspørselskurven. Som vist endrer minstelønnen, w, helningen til arbeidstilbudsplanen, som nå er flat på w til punkt C og deretter skrånende oppover langs den opprinnelige arbeidstilbudskurven. Den nye tilførselsplanen forhindrer arbeidsgivere i å ansette arbeidere til en lønn lavere enn w, selv om reservasjonslønnen deres er lavere enn minstelønnen. Videre angir delen mellom B og C (Ls(w) -Ld(w)), antall arbeidsledige individer (U), det vil si personer som ikke jobber, men som ville være villige til å levere arbeidskraft til minstelønn. I den grad reservasjonslønnen deres er lavere enn w, vil disse personene ikke være likegyldige mellom å jobbe og ikke, det er et velferdstap forbundet med arbeidsledighet i dette tilfellet. 
+
+Ved minstelønn blir unge personer nedprioritert på begrunnelse av at de er uerfarne og en høy minstelønn kan ødelegge jobber spesielt i denne aldersgruppen. Ungdomsarbeidsledigheten er i alle land vesentlig høyere enn arbeidsledigheten blant arbeidstakere i sin beste alder. Hvis det ikke finnes en egen minimumslønn for ungdom, kan unge arbeidstakere bli for dyre for arbeidsgivere (dvs. på grunn av mangel på arbeidserfaring er produktiviteten deres utilstrekkelig for å dekke lønnskostnadene deres). Arbeidsgivere vil se etter folk i sin beste alder som har mer erfaring og kan gi mer arbeidskraft tilbake for lønnen. Det vil også være mer sikkert å investere i opplæring av en litt eldre person enn en ungdom som kanskje ikke helt har funnet ut hva den ønsker å gjøre videre i livet. Det kan også være slik at i fravær av minstelønn for ungdom er unge arbeidstakere for dyre til å få generell opplæring fordi bedriftene ikke kan kompensere for opplæringskostnadene gjennom lavere lønn (noe de får gjøre når det gjelder såkalte «lærlinger»). I Norge har man avtaler som kan sammenliknes noe med minstelønn. Disse er ikke helt på høyde med hva en voksen tjener for ungdommer, men såpass nært, (hvis man ser bort fra lærlinger), at det vil gi bedre uttelling for bedriften å ansette folk med mer erfaring og arbeidskraft. 
+
+En form for minstelønn som gradvis øker med alderen oppmuntrer unge arbeidstakere til å investere i opplæring. Ved høy lønn til de unge vil flere velge å gå rett i jobb i stede for å fortsette med utdanning. Samtidig er det flere ungdommer som ønsker seg en jobb ved siden av studie som bidrar til arbeidsledighet ettersom det ikke er like lett å ha ansatte man ikke hele tiden kan regne med og heller vil prioritere en som kan jobbe fast.
+
+I figuren ovenfor til høyre kan vi se at den er ganske lik den tidligere nevnte figuren, men her for ungdommer. Der etterspørselskurven er brattere ettersom etterspørselen etter arbeidskraft på de under 20år generelt lavere enn de mellom 20-64år. Dette sørger for et større sprik i antall arbeidsledige individer(U).
+
+
+```{r message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+#Script for Utf 3
+# We will use the following packages for the assignment: 
+library(OECD)   #The OECD package
+library(ggplot2)     # the ggplot package
+library(dplyr)  # The DPLYR package
+library(ggrepel) # The ggrepel package
+
+#We want to create a graph that shows the correlation between minimum wages and unemployment. We need to search the OECD data frame for data on these topics.
+#Search data set for minimum wages and unemployment statistics
+dsets<-get_datasets()
+search_dataset("wage",dsets)
+search_dataset("unemployment",dsets)
+
+#Data on minimum wages is available in "MIN2AVE"
+#Data on unemployment is available in "MIG_NUP_RATES_GENDER"
+
+#MinWage
+minwage <- get_dataset("MIN2AVE",
+                       filter = "USA+FRA+GBR+DEU+NZL", 
+                       pre_formatted = TRUE)
+#Selecting years and the min wage as a share of median wage
+minwage2019 <- subset(minwage, Time < 2019 & Time >2007 & SERIES=="MEDIAN")
+minwage2007_2019 <- subset(minwage2019, Time>2007)
+
+#UnEmpl #######TAR IKKE MED 'CAN' ettersom oppgaven ikke spør om det landet.
+unempl <- get_dataset("MIG_NUP_RATES_GENDER",
+                      filter = "USA+CAN+FRA+GBR+DEU+NZL", 
+                      pre_formatted = TRUE)
+
+#Selecting years, the unemployment rate of people born in the country, and both sexes
+unempl2019 <- subset(unempl, Time<2019 & RATE=="U_RATE" & BIRTH=="NB" & GENDER=="TOT")
+unempl2007_2019 <- subset(unempl2019, Time>2007)
+
+#Combining datasets - we need to merge by both country and year to get the right number in the right place
+minwage_unempl <-left_join(minwage2007_2019, unempl2007_2019, by=c("COUNTRY","Time"))
+
+#removing countries with missing data
+complete_minwage_unempl <- na.omit(minwage_unempl)
+
+#transforming the minimum wage and uneployment rate to numeric variables
+complete_minwage_unempl$MinWage_0 <-as.numeric(complete_minwage_unempl$ObsValue.x) #MinWage is between 0 and 1, I want to transform it to between 0 and 100 later, so I call it MinWage_0 here
+complete_minwage_unempl$UnEmpl <-as.numeric(complete_minwage_unempl$ObsValue.y)
+
+#Transforming Minimum wage to percent
+complete_minwage_unempl$MinWage <- complete_minwage_unempl$MinWage_0 * 100
+
+```
+
+## 3.1.2
+
+```{r echo=FALSE}
+#Code for the graph (you need to insert data and variable names)
+minwage_plot <- ggplot(complete_minwage_unempl,aes(x=UnEmpl,y=MinWage, group=COUNTRY, color=COUNTRY)) + # Put unemployment in percent on the x-axis and min wage as percent of median wage on y-axis
+  geom_line(aes(group=COUNTRY), size=1) +
+  geom_point(size=2.5)+
+  labs(x = "Arbeidsledighet(%)" , y ="Minstelønn(%) av medianlønn")  + #Insert names for x and y-axis.
+  theme(legend.position="none")+
+  geom_label_repel(
+    data=complete_minwage_unempl %>% group_by(COUNTRY) %>% #Insert name of data
+      filter(UnEmpl==min(UnEmpl)), # Insert the name of the x-variable. This will put the country name at the start of each country line.
+    aes(UnEmpl, MinWage, fill = factor(COUNTRY), label = sprintf('%s', COUNTRY)), #Insert name for x and y variable
+    color = "black", # the color of the line around the country tag
+    fill = "white") #The color of the fill of the country tag
+minwage_plot
+```
+```{r echo=TRUE}
+#Kjører korrelasjonstest for å se sammenhengen mellom mistelønn og arbeidsledighet.
+
+#Filtrere ut landed jeg skal se på for å finne sammenhengen.
+USAs<- complete_minwage_unempl%>%
+  filter(COUNTRY=='USA')
+
+#Kjører korrelasjonstest
+cor(USAs$UnEmpl, USAs$MinWage, use='everything')
+```
+Ut fra figuren kan vi se at USA har veldig lav minstelønn som prosent av medianlønn. Jo høyere minstelønnen blir, jo mer arbeidsledighet blir det. Kjører vi en korrelasjonstest, som er et mål på samvariasjon der –1 er perfekt negativ samvariasjon, mens +1 sier at det er det er perfekt positiv samvariasjon, kan vi se at det er en klar positiv sammenheng mellom minstelønn og arbeidsledighet i USA. Ut ifra teorien om hvordan en minstelønn vil påvirke et perfekt marked, kan vi se at dette stemmer overens med USA ettersom ledigheten blir større desto høyere minstelønnen blir.
+
+```{r echo=TRUE}
+GBRs<- complete_minwage_unempl%>%
+  filter(COUNTRY=='GBR')
+
+cor(GBRs$UnEmpl, GBRs$MinWage, use='everything')
+```
+I Storbritannia derimot er det betydelig høyere minstelønn som prosent av medianlønn. Og her er det er det motsatt fra USA, der høyere minstelønn fører til mindre arbeidsledighet. Også her kan vi se en klar samvariasjon mellom minstelønn og arbeidsledighet, men her er samvariasjonen negativ.
+
+```{r echo=TRUE}
+FRAs<- complete_minwage_unempl%>%
+  filter(COUNTRY=='FRA')
+
+cor(FRAs$UnEmpl, FRAs$MinWage, use='everything')
+```
+
+```{r echo=TRUE}
+NZLs<- complete_minwage_unempl%>%
+  filter(COUNTRY=='NZL')
+
+cor(NZLs$UnEmpl, NZLs$MinWage, use='everything')
+```
+
+```{r echo=TRUE}
+DEUs<- complete_minwage_unempl%>%
+  filter(COUNTRY=='DEU')
+
+cor(DEUs$UnEmpl, DEUs$MinWage, use='everything')
+```
+I New Zealand og Frankrike kan vi ikke se noe samvariasjon mellom minstelønn og arbeidsledighet. Landene har høyere minstelønn som prosent av medianlønn, sammenliknet med de overnevnte. De har en jevnere graf der arbeidsledigheten øker til tross for at minstelønnen er omtrent lik. 
+Dette gjelder for så vidt også Tyskland, men der er det også litt få observasjoner til å se noen sammenheng.
+
+## 3.1.3
+
+Som vi kan se på grafen til GBR, Storbritannia, viser den at lavere minstelønn gir høyere arbeidsledighet. Bedrifter kan ansette folk for en billigere pris og noen vil fortsatt være villig til å ta seg jobb. Etter å ha ansatt billig arbeidskraft finner bedriften ut at hvis de ønsker enda flere ansatt må de gå opp i lønn, grensekostnaden øker, og da må jo alle som også allerede var ansatt få høyere lønn. Dette fører til at de ikke ønsker ansette flere for de vil gå i tap.
+
+I tillegg vil flere bli indifferent om de jobber eller ikke ettersom lønnen har gått ned og flere vil dermed velge å ikke jobbe ettersom dette er kan være deres reservasjonslønn. 
+
+## 3.1.4
+
+Ettersom minstelønnen generelt er fritatt for inntektsskatt, i sterkt progressive skattesystemer, kan brutto minimums- til medianlønnsforholdet undervurdere minstelønnen og dens relative størrelse til de sentrale målene for lønnsfordelingen. Det er derfor å foretrekke å bruke nettolønn (medianlønn etter skatt). Vi ser også på det å bruke ordentlige inntjeningsmål, som utelukker engangsutbetaling som overtid og bonus. 
+
+Forholdet mellom minimums- og medianlønn ignorerer mulige ringvirkninger knyttet til fastsettelse av minstelønn. Spesielt når minstelønn er innbakt i kollektive forhandlinger, kan en økning av minstelønnen også føre til lønnsøkninger, og flytte en del av lønnsfordelingen til høyre. Hvis disse ringvirkningene er ganske marginale, er forholdet fortsatt et rimelig mål på generøsiteten til minstelønnen og dens mulige effekter på sysselsettingen. 
+
+Ellers kan forholdet mellom de to lønningene være mindre informativt fordi både telleren og nevneren beveger seg i samme retning etter en minstelønnsøkning ettersom vi ser på medianen som er den midt i og bare forflytter seg, og da reagerer indeksen for lite på en økning av minstelønnen. Dermed blir det vanskelig å besvare hvem som skal bli analysert og hvem som blir påvirket av endringen i minstelønn.
+
+En annen potensiell ulempe med dette tiltaket er at det ikke tar hensyn til at det kan være undergrupper av arbeidsstyrken, for eksempel arbeidstakere i den uformelle sektoren, som ikke dekkes av minstelønnen. På grunn av håndhevingsproblemer kan en økning av minstelønnen paradoksalt nok redusere lønnen til de lavest betalte arbeiderne ettersom lavproduktivitetsarbeidere, som ikke er en del av den dekkede sektoren som får økt minstelønn, kan øke arbeidstilbudet i den avdekkede sektoren, og driver ned lønningene.
+
+Økonomer verden over er usikker på hvilken metode som er best for å se sammenhengen mellom nivået på minstelønn og arbeidsledighet. Mitt forslag er å se på strukturell arbeidsledighet mot reell minstelønn, altså kjøpekraft til minstelønn. Man kommer ikke foruten arbeidsledighet i markedet. Strukturell ledighet er arbeidsledighet som er vedvarene over flere perioder (der det har gått opp og ned med konjukturer). Det er en indikasjon på noe mer fundamentalt om en økonomi og hvordan den er organisert. 
